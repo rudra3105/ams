@@ -1,0 +1,1 @@
+export function Topbar(){return <header className='h-14 border-b bg-white px-4 flex items-center justify-between'><h1 className='font-semibold'>Association Management</h1><span className='text-sm'>admin@demo.com</span></header>}
