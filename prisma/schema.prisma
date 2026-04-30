@@ -1,0 +1,38 @@
+generator client { provider = "prisma-client-js" }
+
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+
+enum UserRole { SUPER_ADMIN ASSOCIATION_ADMIN COMPANY_ADMIN MEMBER }
+enum InvoiceStatus { DRAFT PAID UNPAID }
+
+model User {
+  id String @id @default(cuid())
+  authId String @unique
+  email String @unique
+  fullName String
+  role UserRole
+  associationId String
+  association Association @relation(fields:[associationId], references:[id])
+  createdAt DateTime @default(now())
+}
+
+model Association {
+  id String @id @default(cuid())
+  name String
+  emailSimulation Boolean @default(true)
+  companies Company[]
+  members Member[]
+  events Event[]
+  invoices Invoice[]
+  users User[]
+}
+
+model Company { id String @id @default(cuid()) name String industry String? email String? phone String? membershipPlanId String? joinDate DateTime @default(now()) associationId String association Association @relation(fields:[associationId], references:[id]) contacts Contact[] invoices Invoice[] @@index([associationId]) }
+model Contact { id String @id @default(cuid()) companyId String company Company @relation(fields:[companyId], references:[id], onDelete: Cascade) name String role String? email String? phone String? isAuthorizedRepresentative Boolean @default(false) @@index([companyId]) }
+model Member { id String @id @default(cuid()) associationId String association Association @relation(fields:[associationId], references:[id]) name String email String @unique phone String? membershipPlanId String? createdAt DateTime @default(now()) invoices Invoice[] @@index([associationId]) }
+model MembershipPlan { id String @id @default(cuid()) name String amount Decimal @db.Decimal(10,2) interval String }
+model Invoice { id String @id @default(cuid()) invoiceNo String @unique associationId String association Association @relation(fields:[associationId], references:[id]) companyId String? company Company? @relation(fields:[companyId], references:[id]) memberId String? member Member? @relation(fields:[memberId], references:[id]) amount Decimal @db.Decimal(10,2) tax Decimal @db.Decimal(10,2) status InvoiceStatus @default(DRAFT) createdAt DateTime @default(now()) payments Payment[] @@index([associationId,status]) }
+model Payment { id String @id @default(cuid()) invoiceId String invoice Invoice @relation(fields:[invoiceId], references:[id], onDelete: Cascade) amount Decimal @db.Decimal(10,2) paidAt DateTime @default(now()) method String? }
+model Event { id String @id @default(cuid()) associationId String association Association @relation(fields:[associationId], references:[id]) title String date DateTime venue String? description String? participants EventParticipant[] @@index([associationId,date]) }
+model EventParticipant { id String @id @default(cuid()) eventId String event Event @relation(fields:[eventId], references:[id], onDelete: Cascade) companyId String? memberId String? type String }
+model ActivityLog { id String @id @default(cuid()) associationId String action String entityType String entityId String? metadata Json? createdAt DateTime @default(now()) @@index([associationId,createdAt]) }
